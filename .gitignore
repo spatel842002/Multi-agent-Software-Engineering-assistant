@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+mlruns/
+mlruns-test/
+.workspace/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+
+# Env / secrets
+.env
+.env.local
+!.env.example
+!.env.test
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker volumes / local data
+pgdata/
+qdrant_storage/
+minio_data/
+grafana_data/
+
+# Terraform
+terraform/eks/.terraform/
+terraform/eks/*.tfstate
+terraform/eks/*.tfstate.backup
+terraform/eks/.terraform.lock.hcl
+
+# Logs
+*.log
