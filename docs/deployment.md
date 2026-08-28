@@ -20,9 +20,10 @@ override.
 ## Production reference (Kubernetes on EKS)
 
 **Verification status, stated plainly**: the Terraform module passes
-`fmt`/`init -backend=false`/`validate`; the Kubernetes manifests are
-YAML-valid and (in CI) `kubeconform`-validated. Neither has been run
-against a live AWS account or Kubernetes cluster — no cloud account was
+`fmt`/`init -backend=false`/`validate`; the Kubernetes manifests pass
+`kubeconform -strict` (10/10 resources valid, both in CI and verified
+locally). Neither has been run against a live AWS account or Kubernetes
+cluster — no cloud account was
 provisioned for this project, deliberately, per its local-first
 development constraint. Treat everything below as a reviewed, validated
 starting point, not a deploy-and-forget button.

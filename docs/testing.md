@@ -93,6 +93,7 @@ docker compose config -q
 
 Terraform `fmt`/`init`/`validate` all pass; it has never been `apply`'d (no
 AWS account was provisioned for this project). Kubernetes manifests are
-YAML- and (in CI, via `kubeconform`) schema-valid, but not exercised
-against a live cluster in this environment — see
+schema-valid — verified with `kubeconform -strict`, both in CI and locally
+(`10 resources found in 6 files - Valid: 10, Invalid: 0, Errors: 0`) — but
+not exercised against a live cluster in this environment — see
 [docs/deployment.md](deployment.md) for the honest scope of what's verified.

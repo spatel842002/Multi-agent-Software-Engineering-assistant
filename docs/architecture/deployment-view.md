@@ -86,7 +86,7 @@ cost warning before running `apply`.
 
 **Verification status**: `terraform fmt`/`init -backend=false`/`validate`
 all pass against real Postgres-backed module resolution; `k8s/` manifests
-are YAML-valid (`yaml.safe_load`) and, in CI, schema-validated with
-`kubeconform`. Neither has been run against a live cluster or a real AWS
-account in this environment — no cluster was created, matching the
-program's local-first, no-paid-services-during-development constraint.
+pass `kubeconform -strict` schema validation (10/10 resources valid, run
+both in CI and locally). Neither has been run against a live cluster or a
+real AWS account in this environment — no cluster was created, matching
+the program's local-first, no-paid-services-during-development constraint.
