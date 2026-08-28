@@ -56,7 +56,7 @@ jobs:
         run: pytest -m "not integration and not model_download" --cov --cov-report=term --cov-report=xml -q
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-coverage
           path: backend/coverage.xml
