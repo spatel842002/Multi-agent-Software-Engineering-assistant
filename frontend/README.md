@@ -1,32 +1,44 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + TypeScript + Vite + Tailwind CSS + React Router. See the
+[repo-level README](../README.md) for what this app does; this file is
+frontend-specific commands only.
 
-Currently, two official plugins are available:
+## Develop
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm ci
+npm run dev          # http://localhost:5173, proxies /api to localhost:8000 by default
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Test
+
+```bash
+npm test              # Vitest + Testing Library (jsdom)
+npm run test:e2e       # Playwright, needs the full stack running -- see docs/testing.md
+```
+
+## Lint / format / build
+
+```bash
+npm run lint
+npm run format          # check
+npm run format:write    # fix
+npm run build            # tsc -b && vite build
+```
+
+## Structure
+
+```
+src/
+  lib/api.ts           # dependency-free typed fetch client (token storage, error normalization)
+  context/AuthContext.tsx
+  components/          # Layout, ProtectedRoute, StatusBadge, CitationList
+  pages/                # one per route
+e2e/smoke.spec.ts       # Playwright end-to-end smoke test
+```
+
+No state management library, no UI component library, no CSS-in-JS — Tailwind
+utility classes plus a handful of small components was the right amount of
+tooling for this app's actual size. See the repo-level `AGENTS.md` before
+adding a dependency to change that.
