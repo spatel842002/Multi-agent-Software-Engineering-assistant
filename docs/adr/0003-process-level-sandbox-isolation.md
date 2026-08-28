@@ -26,8 +26,8 @@ cleanup on crash) than this vertical slice's scope justifies right now.
 1. `shutil.copytree` the source repository into a disposable directory
    under `WORKSPACE_ROOT` (excluding `.git`) — never touches the canonical
    ingested clone.
-2. `git apply` the diff there, as bytes (not `text=True` — see ADR-adjacent
-   note in `AGENTS.md` about the Windows CRLF bug this avoided).
+2. `git apply` the diff there, as bytes (not `text=True` — see the note in
+   `AGENTS.md` about the Windows CRLF bug this avoided).
 3. If it applies, run the proposed test command there with `shell=True` and
    a hard subprocess timeout (`PATCH_SANDBOX_TIMEOUT_SECONDS`).
 4. The disposable directory is not cleaned up automatically after a run in

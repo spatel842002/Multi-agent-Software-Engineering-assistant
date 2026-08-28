@@ -80,5 +80,37 @@ cd terraform/eks && terraform fmt -recursive && terraform validate
 7. `terraform fmt -check`, `terraform validate` if `terraform/` was touched
 8. YAML-valid `k8s/` manifests if `k8s/` was touched
 
-See also
-[CONTRIBUTING.md](CONTRIBUTING.md) for the human-facing version of this.
+## Non-obvious implementation choices (don't "fix" these)
+
+- `services/agents/graph.py` is a ~60-line hand-rolled graph executor, not
+  LangGraph. This was a deliberate choice (see `docs/adr/`), not an
+  oversight — don't introduce LangGraph without discussing it first.
+- `services/retrieval/lexical.py` has two code paths: real Postgres
+  `tsvector` full-text search, and a Python term-overlap fallback used only
+  because the fast test suite runs against SQLite. Don't remove the
+  SQLite path thinking it's dead code — it's what makes the fast tests not
+  require a running Postgres.
+- `services/agents/diff_extraction.py`'s `_repair_hunk_line_markers`
+  function looks unusually defensive for parsing LLM output. It fixes two
+  specific, real failure modes observed against a real small local model
+  (markdown-fenced diffs, a hunk's blank context line missing its leading-
+  space marker) — see the module's docstring and
+  `tests/unit/test_diff_extraction.py` before changing it.
+- `app/services/patch/sandbox.py` passes `input=diff_text.encode("utf-8")`
+  to `subprocess.run`, not `text=True`. This is not a style choice --
+  `text=True` silently corrupts the diff on Windows (LF -> CRLF translation
+  on stdin). Don't "simplify" it back.
+
+## Adding a new LLM-backed workflow
+
+Follow the existing pattern in `services/agents/workflows.py`: retrieve via
+`hybrid_retrieve`, build the prompt with `build_context_block`, call the
+provider through `_complete_with_metrics` (not directly -- that's what wires
+up the Prometheus latency/error metrics), resolve citations through
+`resolve_citations` (never construct a `Citation` from raw text), and if the
+workflow can produce a side-effecting action (like patch proposal does),
+make it halt at a persisted, `PENDING_APPROVAL`-style row rather than acting
+immediately.
+
+See also [CONTRIBUTING.md](CONTRIBUTING.md) for the human-facing version of
+this document.
