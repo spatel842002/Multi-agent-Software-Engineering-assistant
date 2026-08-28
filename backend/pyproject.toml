@@ -23,6 +23,11 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Without this, `pytest` invoked directly (not `python -m pytest`) doesn't
+# add the backend root to sys.path, and `import app.models` in conftest.py
+# fails with "No module named 'app'" -- this is exactly what CI's plain
+# `pytest ...` step hit (found by reproducing it locally, not by guessing).
+pythonpath = ["."]
 markers = [
     "integration: requires a real external dependency (Postgres/Redis/Qdrant/Ollama/Docker)",
     "model_download: downloads a real model on first run",
