@@ -1,0 +1,113 @@
+{
+  "provider": "fake",
+  "generated_at": "2026-08-28T00:16:40.438782+00:00",
+  "dataset_size": {
+    "qa": 5,
+    "patch": 1
+  },
+  "retrieval_quality": {
+    "hit_rate": 1.0,
+    "n": 5
+  },
+  "groundedness": {
+    "groundedness_rate": 1.0,
+    "n": 5
+  },
+  "citation_accuracy": {
+    "citation_accuracy": 0.8,
+    "n": 5
+  },
+  "qa_latency": {
+    "mean_ms": 29.4,
+    "p95_ms": 49.0,
+    "n": 5
+  },
+  "patch_latency": {
+    "mean_ms": 42.0,
+    "p95_ms": 42.0,
+    "n": 1
+  },
+  "qa_task_success": {
+    "success_rate": 1.0,
+    "n": 5
+  },
+  "patch_task_success": {
+    "apply_success_rate": 1.0,
+    "n": 1
+  },
+  "items": {
+    "qa": [
+      {
+        "question": "What does the divide function do?",
+        "expected_file": "calculator.py",
+        "retrieved_files": [
+          "calculator.py",
+          "README.md"
+        ],
+        "cited_files": [
+          "calculator.py"
+        ],
+        "latency_ms": 49
+      },
+      {
+        "question": "What happens if you divide by zero in this codebase?",
+        "expected_file": "calculator.py",
+        "retrieved_files": [
+          "calculator.py",
+          "README.md"
+        ],
+        "cited_files": [
+          "calculator.py"
+        ],
+        "latency_ms": 21
+      },
+      {
+        "question": "What method resets the Calculator's running total?",
+        "expected_file": "calculator.py",
+        "retrieved_files": [
+          "calculator.py",
+          "README.md"
+        ],
+        "cited_files": [
+          "calculator.py"
+        ],
+        "latency_ms": 23
+      },
+      {
+        "question": "What is this repository for?",
+        "expected_file": "README.md",
+        "retrieved_files": [
+          "calculator.py",
+          "README.md"
+        ],
+        "cited_files": [
+          "calculator.py"
+        ],
+        "latency_ms": 23
+      },
+      {
+        "question": "Users report a ZeroDivisionError crash. Where does that come from?",
+        "expected_file": "calculator.py",
+        "retrieved_files": [
+          "calculator.py",
+          "README.md"
+        ],
+        "cited_files": [
+          "calculator.py"
+        ],
+        "latency_ms": 31
+      }
+    ],
+    "patch": [
+      {
+        "task_description": "Guard divide() against division by zero.",
+        "expected_file": "calculator.py",
+        "target_files": [
+          "calculator.py"
+        ],
+        "diff_applies_cleanly": true,
+        "latency_ms": 42
+      }
+    ]
+  }
+}

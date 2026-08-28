@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+mlruns/
+mlruns-test/
+.workspace/
+tests/
+.env
+.env.test
+*.sqlite3

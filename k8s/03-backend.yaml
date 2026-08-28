@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: masea-backend
+  namespace: masea
+  # Bound to an IAM role for least-privilege S3 access via EKS Pod Identity
+  # -- see terraform/eks/s3.tf's aws_eks_pod_identity_association.backend.
+  # No static AWS credentials are used.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: masea-backend
+  namespace: masea
+  labels:
+    app.kubernetes.io/name: masea-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: masea-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: masea-backend
+    spec:
+      serviceAccountName: masea-backend
+      containers:
+        - name: backend
+          image: ghcr.io/spatel842002/masea-backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: masea-backend-config
+            - secretRef:
+                name: masea-backend-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false # writes to WORKSPACE_ROOT for repo clones/sandboxes
+      securityContext:
+        fsGroup: 1000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: masea-backend
+  namespace: masea
+spec:
+  selector:
+    app.kubernetes.io/name: masea-backend
+  ports:
+    - port: 80
+      targetPort: 8000
+      name: http
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: masea-backend
+  namespace: masea
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: masea-backend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

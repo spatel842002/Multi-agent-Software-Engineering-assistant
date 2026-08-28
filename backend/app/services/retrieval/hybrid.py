@@ -11,12 +11,14 @@ term is omitted if d didn't appear in that ranker's results at all).
 
 from __future__ import annotations
 
+import time
 import uuid
 from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.telemetry import RETRIEVAL_LATENCY_SECONDS
 from app.models.repository import Chunk
 from app.services.retrieval.lexical import lexical_search
 from app.services.retrieval.ports import EmbeddingProvider, VectorStore
@@ -42,12 +44,18 @@ async def hybrid_retrieve(
     top_k: int = 8,
     candidate_pool: int = 25,
 ) -> list[RetrievedChunk]:
-    lexical_hits = await lexical_search(db, repository_id=repository_id, query=query, top_k=candidate_pool)
+    start = time.perf_counter()
+    try:
+        lexical_hits = await lexical_search(
+            db, repository_id=repository_id, query=query, top_k=candidate_pool
+        )
 
-    query_vector = await embedder.embed_query(query)
-    dense_hits = await vector_store.search(
-        repository_id=repository_id, query_vector=query_vector, top_k=candidate_pool
-    )
+        query_vector = await embedder.embed_query(query)
+        dense_hits = await vector_store.search(
+            repository_id=repository_id, query_vector=query_vector, top_k=candidate_pool
+        )
+    finally:
+        RETRIEVAL_LATENCY_SECONDS.labels(retrieval_mode="hybrid").observe(time.perf_counter() - start)
 
     lexical_rank = {hit.chunk_id: i + 1 for i, hit in enumerate(lexical_hits)}
     dense_rank = {hit.chunk_id: i + 1 for i, hit in enumerate(dense_hits)}

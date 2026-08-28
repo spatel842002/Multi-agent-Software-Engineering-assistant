@@ -133,3 +133,49 @@ async def test_patch_proposal_halts_at_pending_approval_and_never_executes(
     assert proposal.status == PatchStatus.PENDING_APPROVAL
     assert proposal.test_command == "pytest tests/test_calculator.py -q"
     assert "divide" in proposal.diff_text
+
+
+async def test_patch_proposal_unwraps_markdown_fences_and_backticked_test_command(
+    db_session, owner, indexed_repository
+):
+    """Regression test for a real failure observed against a live local Ollama
+    model: it wrapped the diff in a ```diff fence and the test command in
+    backticks, which broke `git apply` (fence markers aren't valid diff
+    content) and would have made the sandbox execute a backtick-quoted shell
+    command-substitution instead of running pytest.
+    """
+    repo, embedder, vector_store = indexed_repository
+
+    def responder(messages: list[ChatMessage]) -> str:
+        return (
+            "```diff\n"
+            "--- a/calculator.py\n+++ b/calculator.py\n"
+            "@@ -1,1 +1,1 @@\n-def divide(a, b):\n+def divide(a, b):\n"
+            "```\n\n"
+            "Test command: `pytest tests/test_calculator.py -q`\n"
+            "Citations: [1]"
+        )
+
+    chat = FakeChatProvider(responder=responder)
+
+    result = await run_patch_proposal(
+        db_session,
+        owner_id=owner.id,
+        repository_id=repo.id,
+        task_description="Guard divide() against division by zero.",
+        embedder=embedder,
+        vector_store=vector_store,
+        chat_provider=chat,
+    )
+
+    from sqlalchemy import select
+
+    from app.models.patch import PatchProposal
+
+    proposal = (
+        await db_session.execute(select(PatchProposal).where(PatchProposal.id == result.patch_proposal_id))
+    ).scalar_one()
+
+    assert "```" not in proposal.diff_text
+    assert proposal.diff_text.startswith("--- a/calculator.py")
+    assert proposal.test_command == "pytest tests/test_calculator.py -q"

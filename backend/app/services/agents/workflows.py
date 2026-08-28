@@ -17,10 +17,13 @@ from typing import cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.core.telemetry import LLM_REQUEST_ERRORS, LLM_REQUEST_LATENCY_SECONDS
 from app.models.conversation import Citation, Conversation, Message, MessageRole, WorkflowType
 from app.models.patch import PatchProposal
 from app.services.agents.citations import ResolvedCitation, resolve_citations
+from app.services.agents.diff_extraction import extract_diff_text
 from app.services.agents.graph import GraphContext, GraphNode, WorkflowGraph
 from app.services.agents.prompts import (
     BUG_INVESTIGATION_PROMPT_VERSION,
@@ -36,6 +39,21 @@ from app.services.retrieval.hybrid import hybrid_retrieve
 from app.services.retrieval.ports import EmbeddingProvider, VectorStore
 
 logger = get_logger(__name__)
+
+
+async def _complete_with_metrics(
+    chat_provider: ChatProvider, messages: list[ChatMessage], *, workflow: str
+) -> ChatCompletion:
+    provider_label = get_settings().llm_provider
+    try:
+        completion = await chat_provider.complete(messages)
+    except Exception:
+        LLM_REQUEST_ERRORS.labels(workflow=workflow, provider=provider_label).inc()
+        raise
+    LLM_REQUEST_LATENCY_SECONDS.labels(workflow=workflow, provider=provider_label).observe(
+        completion.latency_ms / 1000
+    )
+    return completion
 
 
 @dataclass(frozen=True)
@@ -117,8 +135,13 @@ async def _run_retrieval_grounded_workflow(
     user_prompt = f"Question: {query}\n\nRetrieved excerpts:\n\n{context_block or '(no excerpts retrieved)'}"
 
     async def _generate(ctx: GraphContext) -> None:
-        completion = await chat_provider.complete(
-            [ChatMessage(role="system", content=system_prompt), ChatMessage(role="user", content=user_prompt)]
+        completion = await _complete_with_metrics(
+            chat_provider,
+            [
+                ChatMessage(role="system", content=system_prompt),
+                ChatMessage(role="user", content=user_prompt),
+            ],
+            workflow=workflow_type.value,
         )
         ctx.data["completion"] = completion
 
@@ -210,6 +233,20 @@ async def run_bug_investigation(
 
 
 _TEST_COMMAND_RE = re.compile(r"Test command:\s*(.+)", re.IGNORECASE)
+_BACKTICK_WRAPPED_RE = re.compile(r"^`+(.*?)`+$")
+
+
+def _clean_test_command(raw: str) -> str:
+    """Strips markdown code-span backticks the model wraps the command in.
+
+    This matters beyond cosmetics: the command is run via `subprocess.run(...,
+    shell=True)` in the sandbox, and a leading/trailing backtick is POSIX
+    shell command-substitution syntax, not a no-op -- leaving them in would
+    silently change what actually executes.
+    """
+    cleaned = raw.strip()
+    match = _BACKTICK_WRAPPED_RE.match(cleaned)
+    return match.group(1).strip() if match else cleaned
 
 
 async def run_patch_proposal(
@@ -249,11 +286,13 @@ async def run_patch_proposal(
         f"Task: {task_description}\n\nRetrieved excerpts:\n\n{context_block or '(no excerpts retrieved)'}"
     )
 
-    completion = await chat_provider.complete(
+    completion = await _complete_with_metrics(
+        chat_provider,
         [
             ChatMessage(role="system", content=PATCH_PROPOSAL_SYSTEM_PROMPT),
             ChatMessage(role="user", content=user_prompt),
-        ]
+        ],
+        workflow=WorkflowType.PATCH_PROPOSAL.value,
     )
 
     resolved = resolve_citations(completion.content, excerpts_by_index)
@@ -279,12 +318,12 @@ async def run_patch_proposal(
         )
 
     test_command_match = _TEST_COMMAND_RE.search(completion.content)
-    test_command = test_command_match.group(1).strip() if test_command_match else None
+    test_command = _clean_test_command(test_command_match.group(1)) if test_command_match else None
 
     patch_proposal = PatchProposal(
         conversation_id=conversation.id,
         repository_id=repository_id,
-        diff_text=completion.content,
+        diff_text=extract_diff_text(completion.content),
         target_files=sorted({c.file_path for c in resolved}),
         rationale=completion.content,
         test_command=test_command,

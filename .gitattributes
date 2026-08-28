@@ -1,0 +1,15 @@
+# Normalize line endings to LF for every text file, regardless of the
+# committer's or checkout machine's git config (core.autocrlf). Consistent
+# line endings matter beyond cosmetics here: this repo's patch-sandbox
+# applies unified diffs with `git apply` against checked-out source files,
+# and a diff generated against LF content silently fails to apply against a
+# CRLF-checked-out copy of the same file.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
