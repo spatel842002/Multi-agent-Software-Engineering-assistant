@@ -25,6 +25,7 @@ coverage/
 .env.local
 !.env.example
 !.env.test
+!.env.docker
 
 # Editors / OS
 .vscode/
@@ -38,11 +39,12 @@ qdrant_storage/
 minio_data/
 grafana_data/
 
-# Terraform
+# Terraform (the .terraform.lock.hcl provider lock file IS committed, for
+# reproducible `terraform init` -- only the local working-dir state below is not)
 terraform/eks/.terraform/
 terraform/eks/*.tfstate
 terraform/eks/*.tfstate.backup
-terraform/eks/.terraform.lock.hcl
+terraform/eks/terraform.tfvars
 
 # Logs
 *.log

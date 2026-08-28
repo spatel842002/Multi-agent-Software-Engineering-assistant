@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  backend:
+    name: Backend (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+
+      - name: ruff format --check
+        working-directory: backend
+        run: ruff format --check app tests
+
+      - name: ruff check
+        working-directory: backend
+        run: ruff check app tests
+
+      - name: mypy
+        working-directory: backend
+        run: mypy app
+
+      - name: pytest (fast suite, no external services)
+        working-directory: backend
+        run: pytest -m "not integration and not model_download" --cov --cov-report=term --cov-report=xml -q
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+
+      - name: pip-audit (dependency vulnerability scan)
+        working-directory: backend
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --desc || true
+
+      - name: Alembic migration syntax check
+        working-directory: backend
+        run: python -c "import ast, pathlib; [ast.parse(p.read_text()) for p in pathlib.Path('alembic/versions').glob('*.py')]"
+
+      - name: Docker build (backend)
+        run: docker build -t masea-backend:ci ./backend
+
+  frontend:
+    name: Frontend (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: eslint
+        working-directory: frontend
+        run: npx eslint .
+
+      - name: prettier --check
+        working-directory: frontend
+        run: npx prettier --check .
+
+      - name: vitest
+        working-directory: frontend
+        run: npx vitest run
+
+      - name: tsc build
+        working-directory: frontend
+        run: npx tsc -b
+
+      - name: vite build
+        working-directory: frontend
+        run: npm run build
+
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high || true
+
+      - name: Docker build (frontend)
+        run: docker build -t masea-frontend:ci ./frontend
+
+  docker-compose-config:
+    name: docker compose config validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose config
+        run: docker compose -f docker-compose.yml config -q
+
+  terraform:
+    name: Terraform fmt/validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - name: terraform fmt -check
+        working-directory: terraform/eks
+        run: terraform fmt -check -recursive
+      - name: terraform init (no backend, no apply)
+        working-directory: terraform/eks
+        run: terraform init -backend=false
+      - name: terraform validate
+        working-directory: terraform/eks
+        run: terraform validate
+
+  k8s-manifests:
+    name: Kubernetes manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: kubeconform
+        uses: docker://ghcr.io/yannh/kubeconform:latest-alpine
+        with:
+          args: -strict -summary k8s/

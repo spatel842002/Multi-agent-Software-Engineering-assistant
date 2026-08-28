@@ -51,14 +51,22 @@ def run_patch_in_sandbox(
 
     apply_result = subprocess.run(
         ["git", "apply", "--verbose"],
-        input=diff_text,
+        # `input=` as bytes, not `text=True` with a str: subprocess's text
+        # mode applies universal-newline translation to stdin on Windows,
+        # silently rewriting LF to CRLF before git ever sees it -- which
+        # desyncs a unified diff's hunk from the (LF) file it targets and
+        # makes `git apply` reject an otherwise-perfectly-valid patch with
+        # "corrupt patch". Confirmed directly: a `difflib`-generated diff,
+        # byte-identical in Python, failed to apply until this was bytes-mode.
+        input=diff_text.encode("utf-8"),
         cwd=sandbox_dir,
         capture_output=True,
-        text=True,
         timeout=30,
     )
     apply_succeeded = apply_result.returncode == 0
-    apply_output = (apply_result.stdout or "") + (apply_result.stderr or "")
+    apply_output = apply_result.stdout.decode("utf-8", errors="replace") + apply_result.stderr.decode(
+        "utf-8", errors="replace"
+    )
 
     if not apply_succeeded or not test_command:
         return SandboxRunResult(

@@ -1,0 +1,37 @@
+# Non-secret application configuration. Values below assume managed
+# equivalents of the docker-compose services (RDS/Cloud SQL for Postgres,
+# ElastiCache/Memorystore for Redis, a hosted or self-run Qdrant, a hosted
+# or self-run Ollama-compatible endpoint) reachable from the cluster --
+# replace the *_URL hosts with the real endpoints for your environment. See
+# docs/deployment.md and docs/account-activation-checklist.md.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: masea-backend-config
+  namespace: masea
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  API_PREFIX: "/api/v1"
+  JWT_ALGORITHM: "HS256"
+  ACCESS_TOKEN_TTL_MINUTES: "15"
+  REFRESH_TOKEN_TTL_DAYS: "14"
+  QDRANT_URL: "http://qdrant.masea.svc.cluster.local:6333"
+  QDRANT_COLLECTION: "code_chunks"
+  LLM_PROVIDER: "ollama"
+  OLLAMA_BASE_URL: "http://ollama.masea.svc.cluster.local:11434"
+  OLLAMA_CHAT_MODEL: "qwen2.5-coder:1.5b"
+  OLLAMA_EMBEDDING_MODEL: "nomic-embed-text"
+  EMBEDDING_DIMENSIONS: "768"
+  S3_BUCKET_REPOSITORIES: "masea-repositories"
+  S3_REGION: "us-east-1"
+  MLFLOW_TRACKING_URI: "http://mlflow.masea.svc.cluster.local:5000"
+  MLFLOW_EXPERIMENT_NAME: "masea-evals"
+  ENABLE_PROMETHEUS: "true"
+  RATE_LIMIT_DEFAULT: "60/minute"
+  RATE_LIMIT_AUTH: "10/minute"
+  INGESTION_MAX_REPO_SIZE_MB: "500"
+  INGESTION_CLONE_TIMEOUT_SECONDS: "120"
+  PATCH_SANDBOX_TIMEOUT_SECONDS: "60"
+  WORKSPACE_ROOT: "/app/.workspace"
+  CORS_ALLOW_ORIGINS: '["https://masea.example.com"]'

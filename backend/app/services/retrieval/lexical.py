@@ -2,7 +2,7 @@
 
 Production (Postgres) uses a real `tsvector`/`ts_rank` full-text query -- the
 GIN-indexed `content_tsv` column added in the Alembic migration
-`0002_chunk_fulltext_index`. Any other SQLAlchemy dialect (only SQLite, and
+`21b381a63167_chunk_fulltext_index`. Any other SQLAlchemy dialect (only SQLite, and
 only in the test suite) falls back to an in-Python term-overlap ranking over
 the repository's chunks, since SQLite has no comparable full-text primitive
 without a separate FTS5 virtual table. Both paths return the same

@@ -1,0 +1,77 @@
+{
+  "title": "MASEA Backend Overview",
+  "uid": "masea-overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "LLM request latency (p50/p95) by workflow",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(masea_llm_request_latency_seconds_bucket[5m])) by (le, workflow))",
+          "legendFormat": "p50 {{workflow}}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(masea_llm_request_latency_seconds_bucket[5m])) by (le, workflow))",
+          "legendFormat": "p95 {{workflow}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "LLM request errors by workflow",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(masea_llm_request_errors_total[5m])) by (workflow)", "legendFormat": "{{workflow}}" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Hybrid retrieval latency (p50/p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(masea_retrieval_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(masea_retrieval_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Ingestion jobs by terminal status",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "sum(rate(masea_ingestion_jobs_total[5m])) by (status)", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Patch approval decisions",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "sum(rate(masea_patch_approval_decisions_total[5m])) by (decision)", "legendFormat": "{{decision}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Process uptime",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [{ "expr": "time() - process_start_time_seconds{job=\"masea-backend\"}", "legendFormat": "uptime (s)" }]
+    }
+  ]
+}

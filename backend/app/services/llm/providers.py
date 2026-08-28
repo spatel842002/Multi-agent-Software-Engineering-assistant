@@ -49,7 +49,14 @@ class OllamaChatProvider:
         lc_messages = [role_to_type[m.role](content=m.content) for m in messages]
 
         start = time.perf_counter()
-        response = await self._client.ainvoke(lc_messages, temperature=temperature)
+        # `temperature` is a declared pydantic field on ChatOllama, not an
+        # ainvoke()/bind() kwarg -- langchain_ollama forwards unrecognized
+        # kwargs straight through to `ollama.AsyncClient.chat()`, which
+        # rejects a bare `temperature` argument (Ollama's native API expects
+        # it nested under `options`). `model_copy` is the correct way to
+        # override a field for one call without mutating the shared client.
+        client = self._client.model_copy(update={"temperature": temperature})
+        response = await client.ainvoke(lc_messages)
         latency_ms = int((time.perf_counter() - start) * 1000)
 
         content = response.content if isinstance(response.content, str) else str(response.content)
