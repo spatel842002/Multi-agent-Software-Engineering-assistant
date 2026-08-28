@@ -15,7 +15,7 @@ jobs:
     name: Secret scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: gitleaks
@@ -27,7 +27,7 @@ jobs:
     name: Backend (lint, types, tests, build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
@@ -78,7 +78,7 @@ jobs:
     name: Frontend (lint, types, tests, build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -121,7 +121,7 @@ jobs:
     name: docker compose config validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: docker compose config
         run: docker compose -f docker-compose.yml config -q
 
@@ -129,7 +129,7 @@ jobs:
     name: Terraform fmt/validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.8"
@@ -147,7 +147,7 @@ jobs:
     name: Kubernetes manifest validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: kubeconform
         uses: docker://ghcr.io/yannh/kubeconform:latest-alpine
         with:
