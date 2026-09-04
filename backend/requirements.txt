@@ -1,6 +1,6 @@
 fastapi==0.141.1
 uvicorn[standard]==0.52.4
-pydantic==2.13.4
+pydantic==2.13.5
 pydantic-settings==2.15.0
 email-validator==2.3.0
 sqlalchemy[asyncio]==2.0.52
@@ -8,9 +8,9 @@ alembic==1.19.1
 asyncpg==0.31.0
 psycopg2-binary==2.9.12
 celery[redis]==5.6.3
-redis==6.4.0
+redis==8.1.0
 qdrant-client==1.19.0
-langchain-core==1.6.0
+langchain-core==1.6.1
 langchain-text-splitters==1.1.2
 langchain-ollama==1.1.0
 httpx==0.28.1
@@ -24,7 +24,7 @@ opentelemetry-sdk==1.44.0
 opentelemetry-exporter-otlp==1.44.0
 opentelemetry-instrumentation-fastapi==0.65b0
 mlflow==3.15.2
-gitpython==3.1.60
+gitpython==3.1.61
 tenacity==9.1.4
 slowapi==0.1.10
 python-dotenv==1.2.3
